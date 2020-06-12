@@ -27,6 +27,7 @@ The recommended way to invoke is by calling the module:
                            output directory
    --skip-dependencies, -x
                            does not check for the dependencies
+   --no-isolation, -n    do not isolate the build in a virtual environment (requires build dependencies to be present)
 
 
 But the ``python-build`` script is also available, so that tools such as pipx_
@@ -36,6 +37,10 @@ can use it:
 
    $ python-build
    usage: python-build [-h] ...
+
+
+By default python-build will build the package in a isolated environment, but
+this behavior can be disabled with ``--no-isolation``.
 
 
 Mission Statement
@@ -82,9 +87,9 @@ with :pep:`517` support.
 ``python -m pep517.build``
 --------------------------
 
-``python -m pep517.build`` will invoke pip_ to install missing dependencies,
-``python-build`` is *stricly* a build tool, it does not do any sort of
-dependency management. If the dependencies are not met, the build will fail.
+``python-build`` implements a CLI tailored to end users. ``python -m
+pep517.build`` *"implements essentially the simplest possible frontend tool,
+to exercise and illustrate how the core functionality can be used"*.
 
 
 Custom Behaviors

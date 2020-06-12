@@ -20,6 +20,15 @@ if sys.version_info < (3,):  # pragma: no cover
     PermissionError = OSError
 
 
+_DEFAULT_BACKEND = {
+    'build-backend': 'setuptools.build_meta:__legacy__',
+    'requires': [
+        'setuptools >= 40.8.0',
+        'wheel'
+    ]
+}
+
+
 class BuildException(Exception):
     '''
     Exception raised by ProjectBuilder
@@ -85,16 +94,14 @@ class ProjectBuilder(object):
         except PermissionError as e:
             raise BuildException("{}: '{}' ".format(e.strerror, e.filename))
 
-        try:
-            self._build_system = self._spec['build-system']
-        except KeyError:
-            self._build_system = {
-                'build-backend': 'setuptools.build_meta:__legacy__',
-                'requires': [
-                    'setuptools >= 40.8.0',
-                    'wheel'
-                ]
-            }
+        self._build_system = self._spec.get('build-system', _DEFAULT_BACKEND)
+
+        if 'build-backend' not in self._build_system:
+            self._build_system['build-backend'] = _DEFAULT_BACKEND['build-backend']
+            self._build_system['requires'] = self._build_system.get('requires', []) + _DEFAULT_BACKEND['requires']
+
+        if 'requires' not in self._build_system:
+            raise BuildException("Missing 'build-system.requires' in pyproject.yml")
 
         self._backend = self._build_system['build-backend']
 
@@ -105,6 +112,10 @@ class ProjectBuilder(object):
 
         self.hook = pep517.wrappers.Pep517HookCaller(self.srcdir, self._backend,
                                                      backend_path=self._build_system.get('backend-path'))
+
+    @property
+    def build_dependencies(self):  # type: () -> Set[str]
+        return set(self._build_system['requires'])
 
     def get_dependencies(self, distribution):  # type: (str) -> Set[str]
         '''

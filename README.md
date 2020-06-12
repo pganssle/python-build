@@ -17,6 +17,7 @@ optional arguments:
                         output directory
   --skip-dependencies, -x
                         does not check for the dependencies
+  --no-isolation, -n    do not isolate the build in a virtual environment (requires build dependencies to be present)
 ```
 
 See the [documentation](https://python-build.readthedocs.io/en/latest/) for more information.

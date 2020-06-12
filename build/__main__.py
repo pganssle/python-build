@@ -7,6 +7,8 @@ import traceback
 
 from typing import List
 
+import pep517.envbuild
+
 from . import BuildBackendException, BuildException, ProjectBuilder
 
 
@@ -27,25 +29,33 @@ def _error(msg, code=1):  # type: (str, int) -> None  # pragma: no cover
     exit(code)
 
 
-def build(srcdir, outdir, distributions, skip_dependencies=False):  # type: (str, str, List[str], bool) -> None
+def build(srcdir, outdir, distributions, isolation=True, skip_dependencies=False):
+    # type: (str, str, List[str], bool, bool) -> None
     '''
     Runs the build process
 
     :param srcdir: Source directory
     :param outdir: Output directory
     :param distributions: Distributions to build (sdist and/or wheel)
+    :param isolation: Isolate the build in a separate environment
     :param skip_dependencies: Do not perform the dependency check
     '''
     try:
         builder = ProjectBuilder(srcdir)
 
-        for dist in distributions:
-            if not skip_dependencies:
-                missing = builder.check_depencencies(dist)
-                if missing:
-                    _error('Missing dependencies:' + ''.join(['\n\t' + dep for dep in missing]))
+        if isolation:
+            with pep517.envbuild.BuildEnvironment() as env:
+                env.pip_install(builder.build_dependencies)
+                for distribution in distributions:
+                    builder.build(distribution, outdir)
+        else:
+            for distribution in distributions:
+                if not skip_dependencies:
+                    missing = builder.check_depencencies(distribution)
+                    if missing:
+                        _error('Missing dependencies:' + ''.join(['\n\t' + dep for dep in missing]))
 
-            builder.build(dist, outdir)
+                builder.build(distribution, outdir)
     except BuildException as e:
         _error(str(e))
     except BuildBackendException as e:
@@ -80,6 +90,9 @@ def main(cli_args):  # type: (List[str]) -> None
     parser.add_argument('--skip-dependencies', '-x',
                         action='store_true',
                         help='does not check for the dependencies')
+    parser.add_argument('--no-isolation', '-n',
+                        action='store_true',
+                        help='do not isolate the build in a virtual environment')
     args = parser.parse_args(cli_args)
 
     distributions = []
@@ -93,7 +106,7 @@ def main(cli_args):  # type: (List[str]) -> None
     if not distributions:
         distributions = ['sdist', 'wheel']
 
-    build(args.srcdir, args.outdir, distributions, args.skip_dependencies)
+    build(args.srcdir, args.outdir, distributions, not args.no_isolation, args.skip_dependencies)
 
 
 if __name__ == '__main__':  # pragma: no cover
