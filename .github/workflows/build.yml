@@ -34,7 +34,7 @@ jobs:
       run: pip install poetry
 
     - name: Build python-build
-      run: python -m build -x
+      run: python -m build -x -n
 
 
   pip:
@@ -68,7 +68,7 @@ jobs:
       run: pip install setuptools wheel
 
     - name: Build pip
-      run: python -m build -x -w ../pip
+      run: python -m build -x -n -w ../pip
 
 
 #  python-install:
